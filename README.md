@@ -12,5 +12,6 @@ Resources and Tools used in this project: pgAdmin (PostgreSQL), Postman, VS Code
 
 
 
-![Screenshot 2024-12-17 232605](https://github.com/user-attachments/assets/fd1e837e-729f-453d-842e-42d8a7ef8893)
+![Screenshot 2024-12-17 232605](https://github.com/user-attachments/assets/059f4b4d-e770-43c3-9337-87e36354a5e7)
+
 
