@@ -1,13 +1,13 @@
 # SportLife-Sport-Complex
-Sportlife is the huge sport complex that is located in Shymkent. There you can book the fields to play football and buy the subscription for the gym. 
+SportLife is a large sports complex located in Shymkent. Here, you can book fields to play football and purchase a gym subscription.
 
 Team members: Aitas Zhakhan | Mansur Akay | Nursultan Orazgeldi
 
 Course: Advanced Programming (GoLang)
 
-How to start project: in the terminal write "go run main.go". 
+How to start the project: Open the terminal and run go run main.go.
 
-Resources and Instruments that was used in this project: pgAdmin (PostgreSQL), Postman, VSCODE.
+Resources and tools used in this project: pgAdmin (PostgreSQL), Postman, VS Code.
 
 
 
