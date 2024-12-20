@@ -7,7 +7,7 @@ Course: Advanced Programming (GoLang)
 
 How to start the project: Open the terminal and run **go run main.go**.
 
-Resources and tools used in this project: pgAdmin (PostgreSQL), Postman, VS Code.
+Resources and Tools used in this project: pgAdmin (PostgreSQL), Postman, VS Code, HTML, CSS, JS, GOLANG, BOOTSTRAP.
 
 
 
