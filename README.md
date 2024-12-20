@@ -5,6 +5,9 @@ Team members: Aitas Zhakhan | Mansur Akay | Nursultan Orazgeldi
 
 Course: Advanced Programming (GoLang)
 
+How to start project: in the terminal write "go run main.go". 
+
+Resources and Instruments that was used in this project: pgAdmin (PostgreSQL), Postman, VSCODE.
 
 
 
