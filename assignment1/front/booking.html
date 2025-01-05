@@ -34,22 +34,25 @@
     </header>
     <div class="booking-container">
         <div class="booking-inner">
-            <h2>Бронирование</h2>
-            <form id="bookingForm">
-                <input type="text" id="user_name" placeholder="Ваше имя" required>
-                <select id="field_name" required>
-                    <option value="" disabled selected>Выберите поле</option>
-                    <option value="Поле Бекет Батыра">Поле Бекет Батыра</option>
-                    <option value="Поле Орынбаева">Поле Орынбаева</option>
-                </select>
-                <input type="date" id="date" required>
-                <input type="time" id="time_slot" required>
-                <button type="submit">Забронировать</button>
-            </form>
-            <div id="bookingResponse"></div>
+            <div class="form-wrapper">
+                <h2>Управление бронированием</h2>
+                <form id="booking-form">
+                    <input type="date" id="date" placeholder="Date" required>
+                    <input type="time" id="time" placeholder="Time" required>
+                    <select id="field" required>
+                        <option value="" disabled selected>Выберите поле</option>
+                        <option value="Поле Бекет Батыра">Поле Бекет Батыра</option>
+                        <option value="Поле Орынбаева">Поле Орынбаева</option>
+                    </select>
+                    <button type="submit">Забронировать</button>
+                </form>
+                <button id="view-bookings">Посмотреть бронирования</button>
+                <button id="update-booking">Обновить бронирование</button>
+                <button id="delete-booking">Удалить бронирование</button>
+            </div>
+            <div id="bookings-list"></div>
         </div>
     </div>
-    
 <footer>
     <div class="footer-container">
         <div class="footer-section logo-section">

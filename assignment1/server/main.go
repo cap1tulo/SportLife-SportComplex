@@ -1,127 +1,228 @@
 package main
 
 import (
-	"database/sql"
 	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
 
-	// Подключаем CORS
 	_ "github.com/lib/pq"
-	"github.com/rs/cors"
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
 )
 
-var db *sql.DB
+type RequestPayload struct {
+	Message string `json:"message"`
+}
 
-// Структура для данных пользователя
+type ResponsePayload struct {
+	Status  string `json:"status"`
+	Message string `json:"message"`
+}
+
 type User struct {
-	Name  string `json:"name"`
-	Email string `json:"email"`
-	Phone string `json:"phone"`
+	gorm.Model
+	Email    string
+	Password string
 }
 
-// Структура для данных бронирования
 type Booking struct {
-	UserName  string `json:"user_name"`  // Имя пользователя
-	FieldName string `json:"field_name"` // Название поля
-	Date      string `json:"date"`       // Дата бронирования
-	TimeSlot  string `json:"time_slot"`  // Временной слот
+	gorm.Model
+	Date  string
+	Time  string
+	Field string
 }
 
-// Подключение к базе данных
+var db *gorm.DB
+
 func initDB() {
+	dsn := "user=postgres password=LUFFYtaroo111&&& dbname=SportLife sslmode=disable"
 	var err error
-	connStr := "user=postgres password=LUFFYtaroo111&&& dbname=SportLife sslmode=disable"
-	db, err = sql.Open("postgres", connStr)
+	db, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
 		log.Fatal("Не удалось подключиться к базе данных:", err)
 	}
-	fmt.Println("Подключение к базе данных успешно!")
+
+	// Миграция моделей User и Booking
+	db.AutoMigrate(&User{}, &Booking{})
+	fmt.Println("Успешно подключено к базе данных и выполнена миграция")
+}
+func enableCORS(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "*") // Разрешить запросы с любых доменов
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+
+		// Обработка preflight-запросов
+		if r.Method == "OPTIONS" {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+
+		next.ServeHTTP(w, r)
+	})
 }
 
-// Обработчик для регистрации пользователя
-func registerHandler(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		http.Error(w, "Метод не поддерживается", http.StatusMethodNotAllowed)
-		return
-	}
+// Авторизация и регистрация
+func handleAuth(w http.ResponseWriter, r *http.Request) {
+	if r.Method == http.MethodPost {
+		// Обработка авторизации
+		var user User
+		decoder := json.NewDecoder(r.Body)
+		err := decoder.Decode(&user)
+		defer r.Body.Close()
+		if err != nil || user.Email == "" || user.Password == "" {
+			w.WriteHeader(http.StatusBadRequest)
+			json.NewEncoder(w).Encode(ResponsePayload{
+				Status:  "fail",
+				Message: "Некорректные данные для авторизации",
+			})
+			return
+		}
 
-	var user User
-	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
-		http.Error(w, `{"status":"fail", "message":"Некорректный JSON"}`, http.StatusBadRequest)
-		return
-	}
+		var existingUser User
+		db.Where("email = ?", user.Email).First(&existingUser)
+		if existingUser.ID == 0 {
+			w.WriteHeader(http.StatusUnauthorized)
+			json.NewEncoder(w).Encode(ResponsePayload{
+				Status:  "fail",
+				Message: "Пользователь не найден",
+			})
+			return
+		}
 
-	// Проверка обязательных полей
-	if user.Name == "" || user.Email == "" || user.Phone == "" {
-		http.Error(w, `{"status":"fail", "message":"Отсутствуют обязательные поля"}`, http.StatusBadRequest)
-		return
-	}
+		if existingUser.Password != user.Password {
+			w.WriteHeader(http.StatusUnauthorized)
+			json.NewEncoder(w).Encode(ResponsePayload{
+				Status:  "fail",
+				Message: "Неверный пароль",
+			})
+			return
+		}
 
-	// Сохранение данных в базу
-	_, err := db.Exec("INSERT INTO users (name, email, phone) VALUES ($1, $2, $3)", user.Name, user.Email, user.Phone)
-	if err != nil {
-		http.Error(w, `{"status":"fail", "message":"Ошибка сохранения данных"}`, http.StatusInternalServerError)
-		return
-	}
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(ResponsePayload{
+			Status:  "success",
+			Message: "Успешный вход",
+		})
+	} else if r.Method == http.MethodPut {
+		// Регистрация нового пользователя
+		var user User
+		decoder := json.NewDecoder(r.Body)
+		err := decoder.Decode(&user)
+		defer r.Body.Close()
+		if err != nil || user.Email == "" || user.Password == "" {
+			w.WriteHeader(http.StatusBadRequest)
+			json.NewEncoder(w).Encode(ResponsePayload{
+				Status:  "fail",
+				Message: "Некорректные данные для регистрации",
+			})
+			return
+		}
 
-	// Успешный ответ
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]string{"status": "success", "message": "Пользователь успешно зарегистрирован"})
+		db.Create(&user)
+		w.WriteHeader(http.StatusCreated)
+		json.NewEncoder(w).Encode(ResponsePayload{
+			Status:  "success",
+			Message: "Пользователь успешно зарегистрирован",
+		})
+	} else {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		json.NewEncoder(w).Encode(ResponsePayload{
+			Status:  "fail",
+			Message: "Метод не поддерживается",
+		})
+	}
 }
 
-// Обработчик для бронирования
-func bookingHandler(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		http.Error(w, `{"status":"fail", "message":"Метод не поддерживается"}`, http.StatusMethodNotAllowed)
-		return
-	}
+// CRUD операции для бронирования
+func handleBookings(w http.ResponseWriter, r *http.Request) {
+	if r.Method == http.MethodPost {
+		// Создание нового бронирования
+		var booking Booking
+		decoder := json.NewDecoder(r.Body)
+		err := decoder.Decode(&booking)
+		defer r.Body.Close()
+		if err != nil || booking.Date == "" || booking.Time == "" || booking.Field == "" {
+			w.WriteHeader(http.StatusBadRequest)
+			json.NewEncoder(w).Encode(ResponsePayload{
+				Status:  "fail",
+				Message: "Некорректные данные бронирования",
+			})
+			return
+		}
 
-	var booking Booking
-	if err := json.NewDecoder(r.Body).Decode(&booking); err != nil {
-		http.Error(w, `{"status":"fail", "message":"Некорректный JSON"}`, http.StatusBadRequest)
-		return
-	}
+		db.Create(&booking)
+		w.WriteHeader(http.StatusCreated)
+		json.NewEncoder(w).Encode(ResponsePayload{
+			Status:  "success",
+			Message: "Бронирование создано",
+		})
+	} else if r.Method == http.MethodGet {
+		// Получение всех бронирований
+		var bookings []Booking
+		db.Find(&bookings)
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(bookings)
+	} else if r.Method == http.MethodPut {
+		// Обновление бронирования
+		var booking Booking
+		decoder := json.NewDecoder(r.Body)
+		err := decoder.Decode(&booking)
+		defer r.Body.Close()
+		if err != nil || booking.ID == 0 {
+			w.WriteHeader(http.StatusBadRequest)
+			json.NewEncoder(w).Encode(ResponsePayload{
+				Status:  "fail",
+				Message: "Некорректные данные бронирования",
+			})
+			return
+		}
 
-	if booking.UserName == "" || booking.FieldName == "" || booking.Date == "" || booking.TimeSlot == "" {
-		http.Error(w, `{"status":"fail", "message":"Отсутствуют обязательные поля"}`, http.StatusBadRequest)
-		return
-	}
+		db.Save(&booking)
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(ResponsePayload{
+			Status:  "success",
+			Message: "Бронирование обновлено",
+		})
+	} else if r.Method == http.MethodDelete {
+		// Удаление бронирования
+		var booking Booking
+		decoder := json.NewDecoder(r.Body)
+		err := decoder.Decode(&booking)
+		defer r.Body.Close()
+		if err != nil || booking.ID == 0 {
+			w.WriteHeader(http.StatusBadRequest)
+			json.NewEncoder(w).Encode(ResponsePayload{
+				Status:  "fail",
+				Message: "Некорректные данные бронирования",
+			})
+			return
+		}
 
-	if booking.FieldName != "Поле Бекет Батыра" && booking.FieldName != "Поле Орынбаева" {
-		http.Error(w, `{"status":"fail", "message":"Некорректное название поля"}`, http.StatusBadRequest)
-		return
+		db.Delete(&booking)
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(ResponsePayload{
+			Status:  "success",
+			Message: "Бронирование удалено",
+		})
+	} else {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		json.NewEncoder(w).Encode(ResponsePayload{
+			Status:  "fail",
+			Message: "Метод не поддерживается",
+		})
 	}
-
-	var userID int
-	err := db.QueryRow("SELECT id FROM users WHERE name = $1", booking.UserName).Scan(&userID)
-	if err != nil {
-		http.Error(w, `{"status":"fail", "message":"Пользователь не найден"}`, http.StatusNotFound)
-		return
-	}
-
-	_, err = db.Exec("INSERT INTO bookings (user_id, field_name, date, time_slot) VALUES ($1, $2, $3, $4)",
-		userID, booking.FieldName, booking.Date, booking.TimeSlot)
-	if err != nil {
-		http.Error(w, `{"status":"fail", "message":"Ошибка сохранения данных"}`, http.StatusInternalServerError)
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]string{"status": "success", "message": "Бронирование успешно создано"})
 }
-
 func main() {
 	initDB()
-	defer db.Close()
 
 	mux := http.NewServeMux()
-	mux.HandleFunc("/register", registerHandler)
-	mux.HandleFunc("/booking", bookingHandler)
-
-	handler := cors.AllowAll().Handler(mux)
+	mux.HandleFunc("/auth", handleAuth)
+	mux.HandleFunc("/bookings", handleBookings)
 
 	fmt.Println("Сервер запущен на порту 8080...")
-	log.Fatal(http.ListenAndServe(":8080", handler))
+	if err := http.ListenAndServe(":8080", enableCORS(mux)); err != nil {
+		log.Fatal("Ошибка запуска сервера:", err)
+	}
 }

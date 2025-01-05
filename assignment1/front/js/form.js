@@ -1,24 +1,35 @@
-document.getElementById("registerForm").addEventListener("submit", async (e) => {
-    e.preventDefault();
+// Авторизация
+document.getElementById("login-form").addEventListener("submit", async (event) => {
+    event.preventDefault();
 
-    const name = document.getElementById("name").value;
+    // Получение данных из input полей
     const email = document.getElementById("email").value;
-    const phone = document.getElementById("phone").value;
+    const password = document.getElementById("password").value;
 
-    const response = await fetch("http://localhost:8080/register", {
+    // Отправка запроса на сервер
+    const response = await fetch("http://localhost:8080/auth", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, phone })
+        body: JSON.stringify({ email, password })
     });
 
     const data = await response.json();
-    const responseMessage = document.getElementById("responseMessage");
+    alert(data.message); // Показываем сообщение пользователю
+});
 
-    if (response.ok) {
-        responseMessage.style.color = "green";
-        responseMessage.innerText = data.message;
-    } else {
-        responseMessage.style.color = "red";
-        responseMessage.innerText = data.message;
-    }
+// Регистрация
+document.getElementById("register-button").addEventListener("click", async () => {
+    // Получение данных из input полей
+    const email = document.getElementById("email").value;
+    const password = document.getElementById("password").value;
+
+    // Отправка запроса на сервер
+    const response = await fetch("http://localhost:8080/auth", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password })
+    });
+
+    const data = await response.json();
+    alert(data.message); // Показываем сообщение пользователю
 });
