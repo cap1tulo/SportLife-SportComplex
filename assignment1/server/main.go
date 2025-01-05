@@ -36,7 +36,7 @@ type Booking struct {
 var db *gorm.DB
 
 func initDB() {
-	dsn := "user=postgres password=LUFFYtaroo111&&& dbname=SportLife sslmode=disable"
+	dsn := "user=postgres password=asdasd123123asdasd dbname=sportlife sslmode=disable"
 	var err error
 	db, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
