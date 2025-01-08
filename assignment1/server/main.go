@@ -1,14 +1,15 @@
 package main
 
 import (
+	"crypto/tls"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"log"
-	"net/http"
-
-	_ "github.com/lib/pq"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
+	"log"
+	"net/http"
+	"net/smtp"
 )
 
 type RequestPayload struct {
@@ -18,6 +19,14 @@ type RequestPayload struct {
 type ResponsePayload struct {
 	Status  string `json:"status"`
 	Message string `json:"message"`
+}
+
+type EmailPayload struct {
+	To       string `json:"to"`
+	Subject  string `json:"subject"`
+	Body     string `json:"body"`
+	File     string `json:"file"`     // Base64 encoded file content
+	FileName string `json:"fileName"` // File name for the attachment
 }
 
 type User struct {
@@ -40,20 +49,20 @@ func initDB() {
 	var err error
 	db, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
-		log.Fatal("Не удалось подключиться к базе данных:", err)
+		log.Fatal("Failed to connect to database:", err)
 	}
 
-	// Миграция моделей User и Booking
+	// Migrate models
 	db.AutoMigrate(&User{}, &Booking{})
-	fmt.Println("Успешно подключено к базе данных и выполнена миграция")
+	fmt.Println("Database connected and migrations applied.")
 }
+
 func enableCORS(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", "*") // Разрешить запросы с любых доменов
+		w.Header().Set("Access-Control-Allow-Origin", "*")
 		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
 		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
 
-		// Обработка preflight-запросов
 		if r.Method == "OPTIONS" {
 			w.WriteHeader(http.StatusOK)
 			return
@@ -63,10 +72,9 @@ func enableCORS(next http.Handler) http.Handler {
 	})
 }
 
-// Авторизация и регистрация
+// Authentication and registration
 func handleAuth(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodPost {
-		// Обработка авторизации
 		var user User
 		decoder := json.NewDecoder(r.Body)
 		err := decoder.Decode(&user)
@@ -75,7 +83,7 @@ func handleAuth(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusBadRequest)
 			json.NewEncoder(w).Encode(ResponsePayload{
 				Status:  "fail",
-				Message: "Некорректные данные для авторизации",
+				Message: "Invalid credentials",
 			})
 			return
 		}
@@ -86,7 +94,7 @@ func handleAuth(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusUnauthorized)
 			json.NewEncoder(w).Encode(ResponsePayload{
 				Status:  "fail",
-				Message: "Пользователь не найден",
+				Message: "User not found",
 			})
 			return
 		}
@@ -95,7 +103,7 @@ func handleAuth(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusUnauthorized)
 			json.NewEncoder(w).Encode(ResponsePayload{
 				Status:  "fail",
-				Message: "Неверный пароль",
+				Message: "Incorrect password",
 			})
 			return
 		}
@@ -103,10 +111,9 @@ func handleAuth(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		json.NewEncoder(w).Encode(ResponsePayload{
 			Status:  "success",
-			Message: "Успешный вход",
+			Message: "Login successful",
 		})
 	} else if r.Method == http.MethodPut {
-		// Регистрация нового пользователя
 		var user User
 		decoder := json.NewDecoder(r.Body)
 		err := decoder.Decode(&user)
@@ -115,7 +122,7 @@ func handleAuth(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusBadRequest)
 			json.NewEncoder(w).Encode(ResponsePayload{
 				Status:  "fail",
-				Message: "Некорректные данные для регистрации",
+				Message: "Invalid registration data",
 			})
 			return
 		}
@@ -124,21 +131,20 @@ func handleAuth(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusCreated)
 		json.NewEncoder(w).Encode(ResponsePayload{
 			Status:  "success",
-			Message: "Пользователь успешно зарегистрирован",
+			Message: "User registered successfully",
 		})
 	} else {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		json.NewEncoder(w).Encode(ResponsePayload{
 			Status:  "fail",
-			Message: "Метод не поддерживается",
+			Message: "Method not supported",
 		})
 	}
 }
 
-// CRUD операции для бронирования
+// Booking CRUD operations
 func handleBookings(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodPost {
-		// Создание нового бронирования
 		var booking Booking
 		decoder := json.NewDecoder(r.Body)
 		err := decoder.Decode(&booking)
@@ -147,7 +153,7 @@ func handleBookings(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusBadRequest)
 			json.NewEncoder(w).Encode(ResponsePayload{
 				Status:  "fail",
-				Message: "Некорректные данные бронирования",
+				Message: "Invalid booking data",
 			})
 			return
 		}
@@ -156,16 +162,14 @@ func handleBookings(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusCreated)
 		json.NewEncoder(w).Encode(ResponsePayload{
 			Status:  "success",
-			Message: "Бронирование создано",
+			Message: "Booking created",
 		})
 	} else if r.Method == http.MethodGet {
-		// Получение всех бронирований
 		var bookings []Booking
 		db.Find(&bookings)
 		w.WriteHeader(http.StatusOK)
 		json.NewEncoder(w).Encode(bookings)
 	} else if r.Method == http.MethodPut {
-		// Обновление бронирования
 		var booking Booking
 		decoder := json.NewDecoder(r.Body)
 		err := decoder.Decode(&booking)
@@ -174,7 +178,7 @@ func handleBookings(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusBadRequest)
 			json.NewEncoder(w).Encode(ResponsePayload{
 				Status:  "fail",
-				Message: "Некорректные данные бронирования",
+				Message: "Invalid booking data",
 			})
 			return
 		}
@@ -183,10 +187,9 @@ func handleBookings(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		json.NewEncoder(w).Encode(ResponsePayload{
 			Status:  "success",
-			Message: "Бронирование обновлено",
+			Message: "Booking updated",
 		})
 	} else if r.Method == http.MethodDelete {
-		// Удаление бронирования
 		var booking Booking
 		decoder := json.NewDecoder(r.Body)
 		err := decoder.Decode(&booking)
@@ -195,7 +198,7 @@ func handleBookings(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusBadRequest)
 			json.NewEncoder(w).Encode(ResponsePayload{
 				Status:  "fail",
-				Message: "Некорректные данные бронирования",
+				Message: "Invalid booking data",
 			})
 			return
 		}
@@ -204,25 +207,189 @@ func handleBookings(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		json.NewEncoder(w).Encode(ResponsePayload{
 			Status:  "success",
-			Message: "Бронирование удалено",
+			Message: "Booking deleted",
 		})
 	} else {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		json.NewEncoder(w).Encode(ResponsePayload{
 			Status:  "fail",
-			Message: "Метод не поддерживается",
+			Message: "Method not supported",
 		})
 	}
 }
+
+// Fetch all users
+func handleGetUsers(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var users []User
+	db.Find(&users)
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(users)
+}
+
+// Fetch all bookings
+func handleGetBookings(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var bookings []Booking
+	db.Find(&bookings)
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(bookings)
+}
+
+// Email sending with attachment support
+func sendEmailWithAttachment(to, subject, body, fileContent, fileName string) error {
+	smtpHost := "smtp.mail.ru"
+	smtpPort := "465"
+	username := "ploc91@mail.ru"
+	password := ""
+	from := username
+
+	// Boundary for separating email parts
+	boundary := "my-boundary-12345"
+
+	// Email header
+	header := fmt.Sprintf(
+		"From: %s\r\nTo: %s\r\nSubject: %s\r\nMIME-Version: 1.0\r\nContent-Type: multipart/mixed; boundary=%s\r\n\r\n",
+		from, to, subject, boundary,
+	)
+
+	// Email body
+	bodyPart := fmt.Sprintf(
+		"--%s\r\nContent-Type: text/plain; charset=\"utf-8\"\r\n\r\n%s\r\n",
+		boundary, body,
+	)
+
+	// Attachment part (if fileContent is provided)
+	attachmentPart := ""
+	if fileContent != "" {
+		decodedFile, err := base64.StdEncoding.DecodeString(fileContent)
+		if err != nil {
+			log.Println("Error decoding file content:", err)
+			return err
+		}
+
+		attachmentPart = fmt.Sprintf(
+			"--%s\r\nContent-Type: application/octet-stream\r\nContent-Transfer-Encoding: base64\r\nContent-Disposition: attachment; filename=\"%s\"\r\n\r\n%s\r\n",
+			boundary, fileName, base64.StdEncoding.EncodeToString(decodedFile),
+		)
+	}
+
+	// Closing boundary
+	closingBoundary := fmt.Sprintf("--%s--", boundary)
+
+	// Final email message
+	message := header + bodyPart + attachmentPart + closingBoundary
+
+	// Connect to the SMTP server
+	auth := smtp.PlainAuth("", username, password, smtpHost)
+	tlsConfig := &tls.Config{
+		InsecureSkipVerify: true,
+		ServerName:         smtpHost,
+	}
+
+	conn, err := tls.Dial("tcp", smtpHost+":"+smtpPort, tlsConfig)
+	if err != nil {
+		log.Println("TLS connection error:", err)
+		return err
+	}
+	defer conn.Close()
+
+	client, err := smtp.NewClient(conn, smtpHost)
+	if err != nil {
+		log.Println("SMTP client error:", err)
+		return err
+	}
+
+	if err := client.Auth(auth); err != nil {
+		log.Println("SMTP authentication error:", err)
+		return err
+	}
+
+	if err := client.Mail(from); err != nil {
+		log.Println("Error setting sender email:", err)
+		return err
+	}
+
+	if err := client.Rcpt(to); err != nil {
+		log.Println("Error setting recipient email:", err)
+		return err
+	}
+
+	writer, err := client.Data()
+	if err != nil {
+		log.Println("Error getting writer:", err)
+		return err
+	}
+
+	if _, err := writer.Write([]byte(message)); err != nil {
+		log.Println("Error writing email message:", err)
+		return err
+	}
+
+	if err := writer.Close(); err != nil {
+		log.Println("Error closing writer:", err)
+		return err
+	}
+
+	if err := client.Quit(); err != nil {
+		log.Println("Error quitting client:", err)
+		return err
+	}
+
+	log.Println("Email sent successfully with attachment.")
+	return nil
+}
+
+// Email handler function
+func handleSendEmail(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var emailPayload EmailPayload
+	if err := json.NewDecoder(r.Body).Decode(&emailPayload); err != nil {
+		http.Error(w, "Invalid payload", http.StatusBadRequest)
+		return
+	}
+
+	// Send email
+	err := sendEmailWithAttachment(emailPayload.To, emailPayload.Subject, emailPayload.Body, emailPayload.File, emailPayload.FileName)
+	if err != nil {
+		log.Println("Error sending email:", err)
+		http.Error(w, "Failed to send email", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(ResponsePayload{
+		Status:  "success",
+		Message: "Email sent successfully with attachment",
+	})
+}
+
 func main() {
 	initDB()
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/auth", handleAuth)
 	mux.HandleFunc("/bookings", handleBookings)
+	mux.HandleFunc("/admin/users", handleGetUsers)
+	mux.HandleFunc("/admin/bookings", handleGetBookings)
+	mux.HandleFunc("/admin/email", handleSendEmail)
 
-	fmt.Println("Сервер запущен на порту 8080...")
+	fmt.Println("Server started on port 8080...")
 	if err := http.ListenAndServe(":8080", enableCORS(mux)); err != nil {
-		log.Fatal("Ошибка запуска сервера:", err)
+		log.Fatal("Failed to start server:", err)
 	}
 }

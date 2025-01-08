@@ -19,7 +19,7 @@ document.querySelectorAll('.custom-video-container').forEach((container, index) 
         if (video.paused) {
             video.play();
             button.classList.add('paused');
-        } else {
+        } else {    
             video.pause();
             button.classList.remove('paused');
         }

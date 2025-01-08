@@ -75,3 +75,73 @@ document.getElementById("delete-booking").addEventListener("click", async () => 
         alert(data.message); // Показываем сообщение пользователю
     }
 });
+
+// Variables for pagination
+const bookingsPerPage = 5; // Number of bookings per page
+let currentPage = 1; // Current page number
+let totalBookings = 0; // Total number of bookings (fetched from server)
+let bookings = []; // Array to store fetched bookings
+
+// Function to render bookings for the current page
+function renderBookings() {
+    const bookingsList = document.getElementById("bookings-list");
+    bookingsList.innerHTML = ""; // Clear previous bookings
+
+    // Calculate start and end index for the current page
+    const startIndex = (currentPage - 1) * bookingsPerPage;
+    const endIndex = Math.min(startIndex + bookingsPerPage, totalBookings);
+
+    // Render the bookings for the current page
+    for (let i = startIndex; i < endIndex; i++) {
+        const booking = bookings[i];
+        const item = document.createElement("div");
+        item.textContent = `Дата: ${booking.Date}, Время: ${booking.Time}, Поле: ${booking.Field}`;
+        bookingsList.appendChild(item);
+    }
+
+    // Render pagination buttons
+    renderPaginationButtons();
+}
+
+// Function to render pagination buttons
+function renderPaginationButtons() {
+    const paginationContainer = document.getElementById("pagination-container");
+    paginationContainer.innerHTML = ""; // Clear previous buttons
+
+    // Calculate the total number of pages
+    const totalPages = Math.ceil(totalBookings / bookingsPerPage);
+
+    // Create buttons dynamically
+    for (let i = 1; i <= totalPages; i++) {
+        const button = document.createElement("button");
+        button.textContent = i;
+        button.className = "pagination-button";
+        if (i === currentPage) {
+            button.classList.add("active");
+        }
+
+        // Add event listener to switch pages
+        button.addEventListener("click", () => {
+            currentPage = i;
+            renderBookings();
+        });
+
+        paginationContainer.appendChild(button);
+    }
+}
+
+// Fetch all bookings from the server
+async function fetchBookings() {
+    const response = await fetch("http://localhost:8080/bookings", {
+        method: "GET",
+    });
+
+    bookings = await response.json();
+    totalBookings = bookings.length;
+
+    // Render bookings and pagination
+    renderBookings();
+}
+
+// Initialize
+fetchBookings();
