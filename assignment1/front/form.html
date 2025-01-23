@@ -33,7 +33,11 @@
         </nav>
     </header>
     <div class="form-container">
-        <div class="form-inner">
+        <div id="greeting" style="display: none;" class="text-center mb-4">
+            <h2>Welcome, <span id="user-email"></span>!</h2>
+            <button id="logout-button" class="btn btn-danger">Logout</button>
+        </div>
+        <div class="form-inner" id="login-container">
             <h2>Авторизация</h2>
             <form id="login-form">
                 <input type="email" id="email" placeholder="Email" required>

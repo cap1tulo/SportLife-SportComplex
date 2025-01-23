@@ -1,188 +1,193 @@
-// Load Dashboard Metrics
-async function loadDashboardMetrics() {
+document.addEventListener('DOMContentLoaded', () => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+        window.location.href = 'form.html';
+        return;
+    }
+
+    // Verify if user is admin
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    if (payload.role !== 'admin') {
+        window.location.href = 'form.html';
+        return;
+    }
+
+    // Fetch and display data
+    fetchUsers();
+    fetchBookings();
+
+    // Setup logout handler
+    document.getElementById('logout-button').addEventListener('click', () => {
+        localStorage.removeItem('token');
+        window.location.href = 'form.html';
+    });
+});
+
+async function fetchUsers() {
     try {
-        const usersResponse = await fetch("http://localhost:8080/admin/users");
-        const bookingsResponse = await fetch("http://localhost:8080/admin/bookings");
+        const response = await fetch('http://localhost:8080/admin/users', {
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+            }
+        });
 
-        const users = await usersResponse.json();
-        const bookings = await bookingsResponse.json();
+        if (!response.ok) {
+            throw new Error('Failed to fetch users');
+        }
 
-        document.querySelector(".dashboard-metrics .card:nth-child(1)").textContent = `Users: ${users.length}`;
-        document.querySelector(".dashboard-metrics .card:nth-child(2)").textContent = `Bookings: ${bookings.length}`;
-        document.querySelector(".dashboard-metrics .card:nth-child(3)").textContent = `Emails Sent: 15`; // Placeholder
+        const users = await response.json();
+        displayUsers(users);
     } catch (error) {
-        console.error("Error loading dashboard metrics:", error);
+        showAlert('Error fetching users: ' + error.message, 'danger');
     }
 }
 
-// Load Users
-async function loadUsers() {
-    const response = await fetch("http://localhost:8080/admin/users");
-    const users = await response.json();
-    const tableBody = document.getElementById("user-table-body");
-    tableBody.innerHTML = ""; // Clear existing rows
+async function fetchBookings() {
+    try {
+        const response = await fetch('http://localhost:8080/admin/bookings', {
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+            }
+        });
 
-    users.forEach(user => {
-        const row = document.createElement("tr");
-        row.innerHTML = `
+        if (!response.ok) {
+            throw new Error('Failed to fetch bookings');
+        }
+
+        const bookings = await response.json();
+        displayBookings(bookings);
+    } catch (error) {
+        showAlert('Error fetching bookings: ' + error.message, 'danger');
+    }
+}
+
+function displayUsers(users) {
+    const tbody = document.getElementById('users-table-body');
+    tbody.innerHTML = users.map(user => `
+        <tr>
             <td>${user.ID}</td>
             <td>${user.Email}</td>
             <td>
-                <button onclick="deleteUser(${user.ID})">Delete</button>
+                <select class="form-select role-select" data-user-id="${user.ID}" 
+                        onchange="updateUserRole(${user.ID}, this.value)">
+                    <option value="user" ${user.Role === 'user' ? 'selected' : ''}>User</option>
+                    <option value="admin" ${user.Role === 'admin' ? 'selected' : ''}>Admin</option>
+                </select>
             </td>
-        `;
-        tableBody.appendChild(row);
-    });
+            <td>${user.Active ? '<span class="badge bg-success">Active</span>' : 
+                              '<span class="badge bg-warning">Pending</span>'}</td>
+            <td>${new Date(user.CreatedAt).toLocaleString()}</td>
+            <td>
+                <button class="btn btn-danger btn-sm" onclick="deleteUser(${user.ID})">
+                    Delete
+                </button>
+            </td>
+        </tr>
+    `).join('');
 }
 
-// Delete User
-async function deleteUser(userId) {
-    if (confirm("Are you sure you want to delete this user?")) {
-        await fetch("http://localhost:8080/admin/users", {
-            method: "DELETE",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ ID: userId })
-        });
-        loadUsers(); // Reload users
-    }
-}
-
-// Add User
-document.getElementById("add-user-button").addEventListener("click", () => {
-    document.getElementById("add-user-form").style.display = "block";
-});
-
-document.getElementById("add-user-form").addEventListener("submit", async event => {
-    event.preventDefault();
-    const email = document.getElementById("user-email").value;
-    const password = document.getElementById("user-password").value;
-
-    await fetch("http://localhost:8080/auth", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ Email: email, Password: password })
-    });
-
-    document.getElementById("add-user-form").reset();
-    document.getElementById("add-user-form").style.display = "none";
-    loadUsers(); // Reload users
-});
-
-// Load Bookings
-async function loadBookings() {
-    const response = await fetch("http://localhost:8080/admin/bookings");
-    const bookings = await response.json();
-    const tableBody = document.getElementById("booking-table-body");
-    tableBody.innerHTML = ""; // Clear existing rows
-
-    bookings.forEach(booking => {
-        const row = document.createElement("tr");
-        row.innerHTML = `
+function displayBookings(bookings) {
+    const tbody = document.getElementById('bookings-table-body');
+    tbody.innerHTML = bookings.map(booking => `
+        <tr>
             <td>${booking.ID}</td>
             <td>${booking.Date}</td>
             <td>${booking.Time}</td>
             <td>${booking.Field}</td>
+            <td>${new Date(booking.CreatedAt).toLocaleString()}</td>
             <td>
-                <button onclick="deleteBooking(${booking.ID})">Delete</button>
+                <button class="btn btn-danger btn-sm" onclick="deleteBooking(${booking.ID})">
+                    Delete
+                </button>
             </td>
-        `;
-        tableBody.appendChild(row);
-    });
+        </tr>
+    `).join('');
 }
 
-// Delete Booking
-async function deleteBooking(bookingId) {
-    if (confirm("Are you sure you want to delete this booking?")) {
-        await fetch("http://localhost:8080/bookings", {
-            method: "DELETE",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ ID: bookingId })
+async function updateUserRole(userId, newRole) {
+    try {
+        const response = await fetch(`http://localhost:8080/admin/users/${userId}/role`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+            },
+            body: JSON.stringify({ role: newRole })
         });
-        loadBookings(); // Reload bookings
+
+        if (!response.ok) {
+            throw new Error('Failed to update user role');
+        }
+
+        showAlert('User role updated successfully', 'success');
+        await fetchUsers(); // Refresh the users list
+    } catch (error) {
+        showAlert('Error updating user role: ' + error.message, 'danger');
     }
 }
 
-// Send Emails
-const emailForm = document.getElementById("email-form");
+async function deleteUser(userId) {
+    if (!confirm('Are you sure you want to delete this user?')) {
+        return;
+    }
 
-if (!emailForm.dataset.bound) {
-    emailForm.addEventListener("submit", async (event) => {
-        event.preventDefault();
+    try {
+        const response = await fetch(`http://localhost:8080/admin/users/${userId}`, {
+            method: 'DELETE',
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+            }
+        });
 
-        const submitButton = event.target.querySelector("button[type='submit']");
-        submitButton.disabled = true; // Disable button to prevent multiple clicks
-
-        const to = document.getElementById("email-to").value;
-        const subject = document.getElementById("email-subject").value;
-        const body = document.getElementById("email-body").value;
-        const fileInput = document.getElementById("email-attachment");
-        let fileContent = "";
-        let fileName = "";
-
-        if (fileInput && fileInput.files.length > 0) {
-            const file = fileInput.files[0];
-            fileName = file.name;
-            const reader = new FileReader();
-            fileContent = await new Promise((resolve) => {
-                reader.onload = () => resolve(reader.result.split(",")[1]); // Get Base64 content
-                reader.readAsDataURL(file);
-            });
+        if (!response.ok) {
+            throw new Error('Failed to delete user');
         }
 
-        const emailPayload = {
-            to,
-            subject,
-            body,
-            file: fileContent,
-            fileName,
-        };
-
-        try {
-            const response = await fetch("http://localhost:8080/admin/email", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(emailPayload),
-            });
-            const result = await response.json();
-            alert(result.message);
-        } catch (error) {
-            alert("Failed to send email: " + error.message);
-        }
-
-        submitButton.disabled = false; // Re-enable button
-        emailForm.reset();
-    });
-    emailForm.dataset.bound = true;
+        showAlert('User deleted successfully', 'success');
+        await fetchUsers(); // Refresh the users list
+    } catch (error) {
+        showAlert('Error deleting user: ' + error.message, 'danger');
+    }
 }
 
-// Show Add Booking Form
-document.getElementById("add-booking-button").addEventListener("click", () => {
-    const form = document.getElementById("add-booking-form");
-    form.style.display = form.style.display === "none" ? "block" : "none";
-});
+async function deleteBooking(bookingId) {
+    if (!confirm('Are you sure you want to delete this booking?')) {
+        return;
+    }
 
-// Add Booking
-document.getElementById("add-booking-form").addEventListener("submit", async (event) => {
-    event.preventDefault();
+    try {
+        const response = await fetch(`http://localhost:8080/admin/bookings/${bookingId}`, {
+            method: 'DELETE',
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+            }
+        });
 
-    const date = document.getElementById("booking-date").value;
-    const time = document.getElementById("booking-time").value;
-    const field = document.getElementById("booking-field").value;
+        if (!response.ok) {
+            throw new Error('Failed to delete booking');
+        }
 
-    // Send POST request to add booking
-    await fetch("http://localhost:8080/bookings", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ Date: date, Time: time, Field: field })
-    });
+        showAlert('Booking deleted successfully', 'success');
+        await fetchBookings(); // Refresh the bookings list
+    } catch (error) {
+        showAlert('Error deleting booking: ' + error.message, 'danger');
+    }
+}
 
-    // Reset form and reload bookings
-    document.getElementById("add-booking-form").reset();
-    document.getElementById("add-booking-form").style.display = "none";
-    loadBookings();
-});
+function showAlert(message, type) {
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+    alertDiv.role = 'alert';
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    `;
+    document.querySelector('.container').insertBefore(alertDiv, document.querySelector('.card'));
+    
+    // Auto dismiss after 3 seconds
+    setTimeout(() => {
+        alertDiv.remove();
+    }, 3000);
+}
 
-// Initialize Functions
-loadDashboardMetrics();
-loadUsers();
-loadBookings();
+// Add these styles to your existing style.css file

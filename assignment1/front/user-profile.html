@@ -5,51 +5,67 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>User Profile</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css">
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
+
+    <header>
+        <nav class="navbar">
+            <ul class="nav-left" id="navbar-links">
+                <li><a href="user-home.html">ГЛАВНАЯ</a></li>
+                <li><a href="user-field-beketbatyra.html">ПОЛЕ БЕКЕТ БАТЫРА</a></li>
+                <li><a href="user-field-orynbaeva.html">ПОЛЕ ОРЫНБАЕВА</a></li>
+                <li><a href="user-gym.html">ТРЕНАЖЕРНЫЙ ЗАЛ</a></li>
+            </ul>
+    
+            <div class="nav-center">
+                <a href="user-home.html">
+                    <img src="img/logo.webp" alt="SportLife Logo" class="navbar-logo">
+                </a>
+            </div>
+    
+            <div class="profile-button-container">
+                <a href="user-profile.html" class="profile-button">Мой профиль</a>
+            </div>
+    
+            <div class="hamburger-menu" id="hamburger-menu">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        </nav>
+    </header>
+
 <div class="container my-5">
     <div class="row justify-content-center">
         <div class="col-md-6">
             <div class="card shadow-sm">
                 <div class="card-body">
                     <h3 class="text-center mb-4 modern-heading">User Profile</h3>
-                    <form>
-                        <!-- Avatar Upload -->
-                        <div class="mb-3 text-center">
-                            <img src="https://via.placeholder.com/150" alt="Avatar" class="rounded-circle img-thumbnail mb-3" width="150">
-                            <input type="file" class="form-control" accept="image/*" id="avatar" name="avatar">
-                        </div>
+                    
+                    <!-- Email Display -->
+                    <div class="mb-3">
+                        <label class="form-label">Email:</label>
+                        <p id="user-email" class="form-control-static"></p>
+                    </div>
 
-                        <!-- Email -->
-                        <div class="mb-3">
-                            <label for="email" class="form-label">Email</label>
-                            <input type="email" class="form-control" id="email" name="email" placeholder="Enter your email">
-                        </div>
+                    <!-- Token Display -->
+                    <div class="mb-3">
+                        <label class="form-label">Token:</label>
+                        <p id="user-token" class="form-control-static" style="word-break: break-all;"></p>
+                    </div>
 
-                        <!-- Current Password -->
-                        <div class="mb-3">
-                            <label for="current-password" class="form-label">Current Password</label>
-                            <input type="password" class="form-control" id="current-password" name="current-password" placeholder="Enter current password">
-                        </div>
-
-                        <!-- New Password -->
+                    <!-- Change Password Form -->
+                    <form id="password-form" class="mb-3">
                         <div class="mb-3">
                             <label for="new-password" class="form-label">New Password</label>
-                            <input type="password" class="form-control" id="new-password" name="new-password" placeholder="Enter new password">
+                            <input type="password" class="form-control" id="new-password" required>
                         </div>
-
-                        <!-- Confirm New Password -->
-                        <div class="mb-3">
-                            <label for="confirm-password" class="form-label">Confirm New Password</label>
-                            <input type="password" class="form-control" id="confirm-password" name="confirm-password" placeholder="Confirm new password">
-                        </div>
-
-                        <!-- Save Button -->
-                        <div class="d-grid">
-                            <button type="submit" class="btn btn-primary profile-button">Save Changes</button>
-                        </div>
+                        <button type="submit" class="btn btn-primary w-100">Change Password</button>
                     </form>
+
+                    <!-- Logout Button -->
+                    <button id="logout-button" class="btn btn-danger w-100">Logout</button>
                 </div>
             </div>
         </div>
@@ -57,5 +73,6 @@
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+<script src="js/user-profile.js"></script>
 </body>
 </html>
