@@ -1,35 +1,48 @@
-    // Авторизация
-    document.getElementById("login-form").addEventListener("submit", async (event) => {
-        event.preventDefault();
+// Login form submission
+document.getElementById("login-form").addEventListener("submit", async (event) => {
+    event.preventDefault();
 
-        // Получение данных из input полей
-        const email = document.getElementById("email").value;
-        const password = document.getElementById("password").value;
+    const email = document.getElementById("email").value;
+    const password = document.getElementById("password").value;
 
-        // Отправка запроса на сервер
+    try {
         const response = await fetch("http://localhost:8080/auth", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ email, password })
+            body: JSON.stringify({ email, password }),
         });
 
         const data = await response.json();
-        alert(data.message); // Показываем сообщение пользователю
-    });
 
-    // Регистрация
-    document.getElementById("register-button").addEventListener("click", async () => {
-        // Получение данных из input полей
-        const email = document.getElementById("email").value;
-        const password = document.getElementById("password").value;
+        if (response.ok && data.status === "success") {
+            alert(data.message);
+            window.location.href = data.data; // Redirect to the URL sent by the server
+        } else {
+            alert(data.message || "Login failed. Please try again.");
+        }
+    } catch (error) {
+        console.error("Error during login:", error);
+        alert("An error occurred. Please try again later.");
+    }
+});
 
-        // Отправка запроса на сервер
+// Registration button click
+document.getElementById("register-button").addEventListener("click", async () => {
+    const email = document.getElementById("email").value;
+    const password = document.getElementById("password").value;
+
+    try {
         const response = await fetch("http://localhost:8080/auth", {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ email, password })
+            body: JSON.stringify({ email, password }), // Send only email and password
         });
 
         const data = await response.json();
-        alert(data.message); // Показываем сообщение пользователю
-    });
+        alert(data.message);
+    } catch (error) {
+        console.error("Error during registration:", error);
+        alert("An error occurred. Please try again later.");
+    }
+});
+

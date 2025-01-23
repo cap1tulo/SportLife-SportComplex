@@ -13,12 +13,15 @@ import (
 )
 
 type RequestPayload struct {
-	Message string `json:"message"`
+	Message  string `json:"message"`
+	Email    string `json:"email"`
+	Password string `json:"password"`
 }
 
 type ResponsePayload struct {
 	Status  string `json:"status"`
 	Message string `json:"message"`
+	Data    string `json:"data,omitempty"` // Optional field for redirect URL
 }
 
 type EmailPayload struct {
@@ -33,6 +36,7 @@ type User struct {
 	gorm.Model
 	Email    string
 	Password string
+	Role     string // New field for role
 }
 
 type Booking struct {
@@ -72,14 +76,14 @@ func enableCORS(next http.Handler) http.Handler {
 	})
 }
 
-// Authentication and registration
+// Handle authentication and redirection based on role
 func handleAuth(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodPost {
-		var user User
+		var payload RequestPayload
 		decoder := json.NewDecoder(r.Body)
-		err := decoder.Decode(&user)
+		err := decoder.Decode(&payload)
 		defer r.Body.Close()
-		if err != nil || user.Email == "" || user.Password == "" {
+		if err != nil || payload.Email == "" || payload.Password == "" {
 			w.WriteHeader(http.StatusBadRequest)
 			json.NewEncoder(w).Encode(ResponsePayload{
 				Status:  "fail",
@@ -88,9 +92,9 @@ func handleAuth(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		var existingUser User
-		db.Where("email = ?", user.Email).First(&existingUser)
-		if existingUser.ID == 0 {
+		var user User
+		db.Where("email = ?", payload.Email).First(&user)
+		if user.ID == 0 {
 			w.WriteHeader(http.StatusUnauthorized)
 			json.NewEncoder(w).Encode(ResponsePayload{
 				Status:  "fail",
@@ -99,7 +103,7 @@ func handleAuth(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		if existingUser.Password != user.Password {
+		if user.Password != payload.Password {
 			w.WriteHeader(http.StatusUnauthorized)
 			json.NewEncoder(w).Encode(ResponsePayload{
 				Status:  "fail",
@@ -108,10 +112,22 @@ func handleAuth(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
+		// Determine redirect URL based on role
+		redirectURL := ""
+		switch user.Role {
+		case "admin":
+			redirectURL = "admin-panel.html"
+		case "user":
+			redirectURL = "user-profile.html"
+		default:
+			redirectURL = "home.html"
+		}
+
 		w.WriteHeader(http.StatusOK)
 		json.NewEncoder(w).Encode(ResponsePayload{
 			Status:  "success",
 			Message: "Login successful",
+			Data:    redirectURL,
 		})
 	} else if r.Method == http.MethodPut {
 		var user User
@@ -127,7 +143,9 @@ func handleAuth(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
+		user.Role = "user" // Default role can be assigned here or manually in the database
 		db.Create(&user)
+
 		w.WriteHeader(http.StatusCreated)
 		json.NewEncoder(w).Encode(ResponsePayload{
 			Status:  "success",
@@ -251,7 +269,7 @@ func sendEmailWithAttachment(to, subject, body, fileContent, fileName string) er
 	smtpHost := "smtp.mail.ru"
 	smtpPort := "465"
 	username := "ploc91@mail.ru"
-	password := ""
+	password := "t8W4VtwhnifanyLeSReD"
 	from := username
 
 	// Boundary for separating email parts

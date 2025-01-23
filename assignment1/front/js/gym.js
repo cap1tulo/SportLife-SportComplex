@@ -40,6 +40,8 @@ document.getElementById('hamburger-menu').addEventListener('click', function () 
 });
 
 
+
+
 ymaps.ready(function () {
     var map = new ymaps.Map("yandex-map", {
         center: [42.313467, 69.621923],

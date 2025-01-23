@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SportLife Orynbaeva</title>
+    <title>SportLife Beket Batyra</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/style.css">
@@ -14,10 +14,10 @@
 <header>
     <nav class="navbar">
         <ul class="nav-left" id="navbar-links">
-            <li><a href="home.html">ГЛАВНАЯ</a></li>
-            <li><a href="field-beketbatyra.html">ПОЛЕ БЕКЕТ БАТЫРА</a></li>
-            <li><a href="field-orynbaeva.html">ПОЛЕ ОРЫНБАЕВА</a></li>
-            <li><a href="gym.html">ТРЕНАЖЕРНЫЙ ЗАЛ</a></li>
+            <li><a href="user-home.html">ГЛАВНАЯ</a></li>
+            <li><a href="user-field-beketbatyra.html">ПОЛЕ БЕКЕТ БАТЫРА</a></li>
+            <li><a href="user-field-orynbaeva.html">ПОЛЕ ОРЫНБАЕВА</a></li>
+            <li><a href="user-gym.html">ТРЕНАЖЕРНЫЙ ЗАЛ</a></li>
         </ul>
 
         <div class="nav-center">
@@ -26,45 +26,48 @@
             </a>
         </div>
 
-        <div class="profile-button-container">
-            <a href="form.html" class="profile-button">Войти</a>
-        </div>
+        <div class="nav-right">
+            <div class="profile-button-container">
+                <a href="user-profile.html" class="profile-button">My Profile</a>
+            </div>
 
-        <div class="hamburger-menu" id="hamburger-menu">
-            <span></span>
-            <span></span>
-            <span></span>
+            <div class="hamburger-menu" id="hamburger-menu">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
         </div>
     </nav>
 </header>
 
+
 <section class="photo-carousel-section">
     <div class="carousel-container">
-        <div id="orynbaevaCarousel" class="carousel slide" data-bs-ride="carousel">
+        <div id="beketbatyraCarousel" class="carousel slide" data-bs-ride="carousel">
 
             <div class="carousel-indicators">
-                <button type="button" data-bs-target="#orynbaevaCarousel" data-bs-slide-to="0" class="active"></button>
-                <button type="button" data-bs-target="#orynbaevaCarousel" data-bs-slide-to="1"></button>
-                <button type="button" data-bs-target="#orynbaevaCarousel" data-bs-slide-to="2"></button>
+                <button type="button" data-bs-target="#beketbatyraCarousel" data-bs-slide-to="0" class="active"></button>
+                <button type="button" data-bs-target="#beketbatyraCarousel" data-bs-slide-to="1"></button>
+                <button type="button" data-bs-target="#beketbatyraCarousel" data-bs-slide-to="2"></button>
             </div>
 
             <div class="carousel-inner">
                 <div class="carousel-item active">
-                    <img src="carousel_images/field1.webp" class="d-block w-100" alt="Orynbaeva Image 1">
+                    <img src="carousel_images/field1.webp" class="d-block w-100" alt="Beket Batyra Image 1">
                 </div>
                 <div class="carousel-item">
-                    <img src="carousel_images/field2.webp" class="d-block w-100" alt="Orynbaeva Image 2">
+                    <img src="carousel_images/field2.webp" class="d-block w-100" alt="Beket Batyra Image 2">
                 </div>
                 <div class="carousel-item">
-                    <img src="carousel_images/field3.webp" class="d-block w-100" alt="Orynbaeva Image 3">
+                    <img src="carousel_images/field3.webp" class="d-block w-100" alt="Beket Batyra Image 3">
                 </div>
             </div>
 
-            <button class="carousel-control-prev" type="button" data-bs-target="#orynbaevaCarousel" data-bs-slide="prev">
+            <button class="carousel-control-prev" type="button" data-bs-target="#beketbatyraCarousel" data-bs-slide="prev">
                 <span class="carousel-control-prev-icon" aria-hidden="true"></span>
                 <span class="visually-hidden">Previous</span>
             </button>
-            <button class="carousel-control-next" type="button" data-bs-target="#orynbaevaCarousel" data-bs-slide="next">
+            <button class="carousel-control-next" type="button" data-bs-target="#beketbatyraCarousel" data-bs-slide="next">
                 <span class="carousel-control-next-icon" aria-hidden="true"></span>
                 <span class="visually-hidden">Next</span>
             </button>
@@ -76,12 +79,12 @@
     <div class="container">
         <div class="row">
             <div id="textSlide1" class="carousel-text-item active">
-                <h2 class="carousel-title">ПОЛЕ НА ОРЫНБАЕВА</h2>
-                <p class="carousel-subtitle">Премиальное поле для проведения футбольных матчей.</p>
+                <h2 class="carousel-title">ПОЛЕ НА БЕКЕТ БАТЫРА</h2>
+                <p class="carousel-subtitle">Премиальное поле фирмы Hatko.</p>
             </div>
             <div id="textSlide2" class="carousel-text-item">
                 <h2 class="carousel-title">ИСКУССТВЕННОЕ ПОКРЫТИЕ</h2>
-                <p class="carousel-subtitle">Высококачественное искусственное покрытие для идеальной игры.</p>
+                <p class="carousel-subtitle">Высококачественное искусственное покрытие из Голландских ниток.</p>
             </div>
             <div id="textSlide3" class="carousel-text-item">
                 <h2 class="carousel-title">МЕСТО ДЛЯ СОБЫТИЙ</h2>
@@ -94,17 +97,17 @@
 <section class="brief-info">
     <div class="info-container">
         <div class="info-item">
-            <h2>4</h2>
+            <h2>2</h2>
             <p>Поля</p>
             <img src="icons/1413994-200.webp" alt="Area Icon" class="info-icon">
         </div>
         <div class="info-item">
-            <h2>8</h2>
+            <h2>4</h2>
             <p>Душевых</p>
             <img src="icons/4163383.webp" alt="Shower Icon" class="info-icon">
         </div>
         <div class="info-item">
-            <h2>104</h2>
+            <h2>52</h2>
             <p>Шкафчиков</p>
             <img src="icons/360_F_577986688_QsIR75W0QDYoe3AYGCnEmMeGLACLyNUf.webp" alt="Locker Icon" class="info-icon">
         </div>
@@ -207,6 +210,7 @@
     </div>
 </section>
 
+
 <a href="booking.html"><button class="book-button">ЗАБРОНИРОВАТЬ</button></a>
 
 <section class="contact-location-section py-5">
@@ -216,7 +220,7 @@
                 <h2 class="contact-heading mb-4">Контакты:</h2>
                 <p class="contact-info">
                     <span><strong>Телефон:</strong> <a href="tel:+77001311973" class="phone-number">+7 700-131-19-73</a></span><br>
-                    <span><strong>Адрес:</strong> <a href="https://2gis.kz/shymkent/firm/70000001093425925/69.612312%2C42.318426?m=69.612107%2C42.318626%2F18"><span class="address-text">Орынбаева 43/1</span></a></span>
+                    <span><strong>Адрес:</strong> <a href="https://2gis.kz/shymkent/firm/70000001026131850/69.6217%2C42.31356?m=69.621791%2C42.31349%2F19.41"><span class="address-text">Бекет Батыра 86</span></a></span>
                 </p>
             </div>
 
@@ -281,11 +285,9 @@
     </div>
 </footer>
 
-
-
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://api-maps.yandex.ru/2.1/?lang=ru_RU" type="text/javascript"></script>
-<script src="js/field-orynbaeva.js"></script>
+<script src="js/field-beketbatyra.js"></script>
 
 </body>
 </html>
